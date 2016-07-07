@@ -42,8 +42,8 @@
             stroke-width : 1;
         }
     </style>
-    <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-    <script type="text/javascript" src="http://d3js.org/topojson.v1.min.js" charset="utf-8"></script>
+    <script type="text/javascript" src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script type="text/javascript" src="https://d3js.org/topojson.v1.min.js" charset="utf-8"></script>
 </head>
 
 <body bgcolor="black">
@@ -94,7 +94,7 @@
 		    .attr("fill", "url(#g1)");
 
         var url = "index.php?plugin=attach&pcmd=open&file=world.json&refer=HTML%20D3.js%20Globe";
-        //var url = "http://localhost:8008/world.json";
+        //var url = "https://localhost:8008/world.json";
 
         d3.json(url, function(error, data){
 

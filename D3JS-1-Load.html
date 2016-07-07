@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <title>D3 Page Template</title>
-        <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <script type="text/javascript" src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
     </head>
     <body>
         <div style="float:left; padding: 10px">
@@ -13,7 +13,7 @@
             JSON <table border="1" id="jsontbl"></table>
         </div>        
         <script type="text/javascript">
-            d3.csv("http://localhost:8080/JAX-RSExam/webresources/d3/text", function(error, data) {
+            d3.csv("https://localhost:8080/JAX-RSExam/webresources/d3/text", function(error, data) {
                 if (error) {
                     console.log("ERROR RECV");
                     console.log(error);
@@ -30,7 +30,7 @@
                 return;
             });
             
-            d3.json("http://localhost:8080/JAX-RSExam/webresources/d3/json", function(error, data) {
+            d3.json("https://localhost:8080/JAX-RSExam/webresources/d3/json", function(error, data) {
                 if (error) {
                     console.log("ERROR RECV");
                     console.log(error);

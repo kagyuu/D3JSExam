@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html language="ja">
+<head>
+    <meta charset="utf-8"/>
+    <title>SVGの練習</title>
+</head>
+<body>
+    <svg widht="400" height="300" onload="move()">
+        <defs>
+            <style type="text/css"><![CDATA[
+            #myBox {
+                fill:orange;
+                stroke:black;
+                stroke-widht:10;
+                stroke-dasharray:20,5
+            }
+            #myCircle {
+                fill:yellow;
+                stroke:gray;
+                stroke-widht:2;
+                opacity: 0.5;
+            }
+            ]]></style>
+            <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0.0" stop-color="skyblue"/>
+                <stop offset="0.5" stop-color="pink"/>
+                <stop offset="1.0" stop-color="yellow"/>
+            </linearGradient>
+            <radialGradient id="g2" cx="0.5" cy="0.5" r="0.5">
+                <stop offset="0.0" stop-color="skyblue"/>
+                <stop offset="0.5" stop-color="pink"/>
+                <stop offset="1.0" stop-color="yellow" stop-opacity="0.5"/>
+            </linearGradient>
+        </defs>
+        <!-- Group -->
+        <g id="myBox">
+            <!-- Style適用 -->
+            <rect x="0" y="0" width="100" height="100"/>
+            <!-- Style上書き -->
+            <rect x="10" y="10" width="100" height="100" fill="skyblue"/>
+            <!-- 角丸 -->
+            <rect x="20" y="20" width="100" height="100" rx="10" ry="10" fill="red"/>
+        </g>
+        <circle cx="80" cy="80" r="50" id="myCircle"/>
+        <ellipse cx="100" cy="100" rx="50" ry="30" fill="white" stroke="black"/>
+        <line x1="0" y1="200" x2="200" y2="200" stroke="black"/>
+        <text x="0" y="200" font-size="32" fill="yellow" stroke="black" stoke-width="2" rotate="20">
+            SVG
+        </text>
+        <!-- 連続線分 -->
+        <polyline points="100 50 150 100 50 100" stroke="black" fill="none"/>
+        <!-- 多角形 (最初の点と最後の点が結ばれる) -->
+        <polygon  points="200 50 250 100 150 100" stroke="black" fill="yellow"/>
+        <!-- 連続線分 -->
+        <path d="M100 50 l50 50 h100 v100 h100" stroke="black" fill="none"/>        
+        <!-- linear gradation -->
+        <rect x="300" y="0" width="100" height="100" fill="url(#g1)"/>
+        <!-- radial gradation -->
+        <rect x="400" y="0" width="100" height="100" fill="url(#g2)"/>
+        <!-- animation -->
+        <circle cx="200" cy="150" r="20" fill="blue" opacity="0.1">
+            <!-- 1秒後から2秒かけて r を 40 から 120 に増やす。無限に繰り返す -->
+            <animate attributeName="r" from="40" to="120" dur="2s" begin="1s" repeatCount="indefinite"/>
+        </circle>
+        <!-- Javascript -->
+        <circle id="ball" cx="0" cy="0" r="10" fill="blue" opacity="0.8"/>
+    </svg>
+</body>
+<script type="text/javascript">
+
+var ball = document.getElementById('ball');
+var x = 0;
+var y = 0;
+var dx = 1;
+var dy = 1;
+move();
+function move() {
+
+    x += dx * Math.random() * 3;
+    y += dy * Math.random() * 2;
+                
+    ball.setAttribute('cx', x);
+    ball.setAttribute('cy', y);
+    
+    dx = x < 0 ? 1 : x > 400 ? -1 : dx;
+    dy = y < 0 ? 1 : y > 300 ? -1 : dy;
+    
+    setTimeout('move()', 100);
+}
+
+</script>
+</html>

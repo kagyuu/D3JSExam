@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Force</title>
+        <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <script type="text/javascript" src="temp.js" charset="utf-8"></script>
+        <style type="text/css">
+            text {
+                font-family: sans-serif;
+                font-size: 8px;
+            }
+        </style>
+    </head>
+    <body>
+        平均気温の関係 1891-2012
+        <div id="chart"></div>
+        <script type="text/javascript">
+            var w = 800;
+            var h = 600;
+
+            // 平均気温順にソートする
+            dataset = dataset.sort(function(a,b){ return a.global - b.global; });
+            
+            // 接続の目安のために、年平均気温の差の平均と分散を求める
+            var avr = 0.0;
+            for (var srcNo = 0; srcNo < (dataset.length - 1); srcNo++) {
+                avr += Math.abs(dataset[srcNo].global - dataset[srcNo+1].global);
+            }
+            avr = avr / dataset.length;
+            
+            var sigma = 0.0;
+            for (var srcNo = 0; srcNo < (dataset.length - 1); srcNo++) {
+                sigma += Math.abs(Math.abs(dataset[srcNo].global - dataset[srcNo+1].global) - avr);
+            }
+            sigma = sigma / dataset.length;
+            
+            console.log(avr);
+            console.log(avr + 2*sigma);
+            // 隣同士と、年平均気温の差が ±3σ 以下のデータ同士を接続する
+            var edges = new Array();
+            for (var srcNo = 0; srcNo < (dataset.length - 1); srcNo++) {
+                
+                edges.push({source: srcNo, target: (srcNo + 1)});
+                
+                for (var targetNo = srcNo + 2; targetNo < dataset.length; targetNo++) {
+                    if (Math.abs(dataset[srcNo].global - dataset[targetNo].global) < avr + 3*sigma) {
+                        edges.push({source: srcNo, target: targetNo});
+                    } else {
+                        break;
+                    }
+                }
+            }
+            console.log(edges);
+            
+            //Initialize a default force layout, using the nodes and edges in dataset
+            var force = d3.layout.force()
+                                 .nodes(dataset)
+                                 .links(edges)
+                                 .size([w, h])
+                                 .linkDistance([50]) // 接続されているもの同士の距離は 50
+                                 .charge([-100])     // ノード同士の斥力 (デフォルトは -30)
+                                 .start();
+            
+            // min value
+            var minX = d3.min(dataset, function(d) { return d.global; });
+
+            // max value
+            var maxX = d3.max(dataset, function(d) { return d.global; });
+            
+            // 塗りつぶし色設定
+            var colors = d3.scale.quantile()
+                .domain([minX, maxX])
+                .range(['blue','cyan','pink','red']);
+            
+            //Create SVG element
+            var svg = d3.select("#chart")
+                        .append("svg")
+                        .attr("width", w)
+                        .attr("height", h);
+            
+            //Create edges as lines
+            var edges = svg.selectAll("line")
+                .data(edges)
+                .enter()
+                .append("line")
+                .style("stroke", "lightgray")
+                .style("stroke-width", 1);
+            
+            //Create nodes as circles
+            var nodes = svg.selectAll("circle")
+                .data(dataset)
+                .enter()
+                .append("circle")
+                .attr("r", 5)
+                .style("fill", function(d) {
+                    return colors(d.global);
+                })
+                .call(force.drag);
+                
+            //Create nodes as text
+            var texts = svg.selectAll("text")
+                .data(dataset)
+                .enter()
+                .append("text")
+                .text(function(d){return d.year;})
+                .on("mouseover", function(d){ d3.select(this).text(d.global + "℃"); })
+                .on("mouseout", function(d){ d3.select(this).text(d.year); })
+                .call(force.drag);
+
+            //Every time the simulation "ticks", this will be called
+            force.on("tick", function() {
+
+                edges.attr("x1", function(d) { return d.source.x; })
+                     .attr("y1", function(d) { return d.source.y; })
+                     .attr("x2", function(d) { return d.target.x; })
+                     .attr("y2", function(d) { return d.target.y; });
+            
+                nodes.attr("cx", function(d) { return d.x; })
+                     .attr("cy", function(d) { return d.y; });
+                     
+                texts.attr("x", function(d) { return d.x; })
+                     .attr("y", function(d) { return d.y; });
+    
+            });
+        </script>
+    </body>
+</html>

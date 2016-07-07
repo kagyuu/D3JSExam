@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>D3 Page Template</title>
+        <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    </head>
+    <body>
+        <div style="float:left; padding: 10px">
+            CSV <table border="1" id="csvtbl"></table>
+        </div>
+        <div style="float:left; padding: 10px">
+            JSON <table border="1" id="jsontbl"></table>
+        </div>        
+        <script type="text/javascript">
+            d3.csv("http://localhost:8080/JAX-RSExam/webresources/d3/text", function(error, data) {
+                if (error) {
+                    console.log("ERROR RECV");
+                    console.log(error);
+                    return;
+                }
+                
+                var row = d3.select('#csvtbl').selectAll('tr').data(data)
+                    .enter()
+                    .append('tr');
+                
+                row.append('td').text(function(d){ return d.date; });
+                row.append('td').text(function(d){ return d.freq; });
+                    
+                return;
+            });
+            
+            d3.json("http://localhost:8080/JAX-RSExam/webresources/d3/json", function(error, data) {
+                if (error) {
+                    console.log("ERROR RECV");
+                    console.log(error);
+                    return;
+                }
+                
+                var row = d3.select('#jsontbl').selectAll('tr').data(data)
+                    .enter()
+                    .append('tr');
+                
+                row.append('td').text(function(d){ return d.date; });
+                row.append('td').text(function(d){ return d.freq; });
+                
+                return;
+            });
+            
+        </script>
+    </body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Stack</title>
+		<style type="text/css">
+            fieldset {
+                vertical-align: top;
+                display:inline;
+            }
+            text {
+                font-family: sans-serif;
+                font-size: 8px;
+            }
+        </style>
+	</head>
+	<body>
+	    <fieldset>
+	        <legend>zero(default)</legend>
+            <div id="chart_zero"></div>
+	    </fieldset>
+	    <fieldset>
+	        <legend>widdge</legend>
+            <div id="chart_wiggle"></div>
+	    </fieldset>
+	    <fieldset>
+	        <legend>expand</legend>
+            <div id="chart_expand"></div>
+	    </fieldset>
+	    <fieldset>
+	        <legend>silhouette</legend>
+            <div id="chart_silhouette"></div>
+	    </fieldset>
+        <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+		<script type="text/javascript">
+
+			//Width and height
+			var w = 200;
+			var h = 100;
+			var margin = {x:0,y:15};
+
+			//Original data
+			var dataset = [
+			    {
+    			    name : "apple",
+    			    values : [
+    					{ x: 2012, y: 5 },
+    					{ x: 2013, y: 4 },
+    					{ x: 2014, y: 2 },
+    					{ x: 2015, y: 7 },
+    					{ x: 2016, y: 23 }
+                    ]
+                },
+			    {
+    			    name : "orange",
+    			    values : [
+    					{ x: 2012, y: 10 },
+    					{ x: 2013, y: 12 },
+    					{ x: 2014, y: 19 },
+    					{ x: 2015, y: 23 },
+    					{ x: 2016, y: 17 }
+                    ]
+                },
+			    {
+    			    name : "grape",
+    			    values : [
+    					{ x: 2012, y: 22 },
+    					{ x: 2013, y: 28 },
+    					{ x: 2014, y: 32 },
+    					{ x: 2015, y: 35 },
+    					{ x: 2016, y: 43 }
+                    ]
+                }
+			];
+			
+			drawChart("zero");
+			drawChart("wiggle");
+			drawChart("expand");
+			drawChart("silhouette");
+			
+			function drawChart(offset) {
+    			//Set up stack method
+    			var stack = d3.layout.stack()
+                                .offset(offset)
+                                .values(function(d) { return d.values; });
+    
+    			//Data, stacked
+    			stack(dataset);
+    			
+    			console.log(dataset);
+    
+    			//Set up scales
+    			var xScale = d3.scale.ordinal()
+    				.domain(dataset[0].values.map(function(d){return d.x;}))
+    				.rangeRoundBands([0, w], 0.05);
+                
+                var yMax = d3.max(dataset, function(d) {
+                    return d3.max(d.values, function(d) {
+                        return d.y0 + d.y;
+                    });
+                });
+                
+    			var yScale = d3.scale.linear()
+    				.domain([0,	yMax])
+    				.range([margin.y, h - margin.y]);
+    
+                var xAxis = d3.svg.axis()
+                                .scale(xScale)
+                                .orient("top")
+                                .tickSize(0);
+                                
+    			//Easy colors accessible via a 10-step ordinal scale
+    			var colors = d3.scale.category10();
+    		
+    			//Create SVG element
+    			var svg = d3.select("body").select("#chart_" + offset)
+    						.append("svg")
+    						.attr("width", w)
+    						.attr("height", h);
+    	
+    			// Add a group for each row of data
+    			var groups = svg.selectAll("g")
+    				.data(dataset)
+    				.enter()
+    				.append("g")
+    				.style("fill", function(d, i) {
+    					return colors(i);
+    				});
+    	
+    			// Add a rect for each data value
+    			var rects = groups.selectAll("rect")
+    				.data(function(d) { return d.values; })
+    				.enter()
+    				.append("rect")
+    				.attr("x", function(d) {
+    					return xScale(d.x);
+    				})
+    				.attr("y", function(d) {
+    					return yScale(d.y0);
+    				})
+    				.attr("height", function(d) {
+    					return yScale(d.y);
+    				})
+    				.attr("width", xScale.rangeBand());
+    
+                // Add axis
+                svg.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", "translate(0," + (margin.y) + ")")
+                    .call(xAxis);
+            }
+		</script>
+	</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Histgram</title>
+        <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <script type="text/javascript" src="temp.js" charset="utf-8"></script>
+        <style type="text/css">
+            .axis path,
+            .axis line {
+                fill: none;
+                stroke: black;
+                shape-rendering: crispEdges;
+            }
+
+            .axis text {
+                font-family: sans-serif;
+                font-size: 8px;
+            }
+        </style>
+    </head>
+    <body>
+        平均気温の頻度 <span id="from">1891</span>-<span id="to">2012</span> (2000年基準)
+        <div id="chart"></div>
+        <button value="1891">1891-1921</button>
+        <button value="1921">1921-1951</button>
+        <button value="1951">1951-1981</button>
+        <button value="1981">1981-2011</button>
+        <button value="all">ALL</button>
+        <script type="text/javascript">
+            var w = 480;
+            var h = 240;
+            var margin = {x:50, y:20};
+
+            // min value
+            var minX = d3.min(dataset, function(d) { return d.global; });
+
+            // max value
+            var maxX = d3.max(dataset, function(d) { return d.global; });
+
+            // 温度(X軸)設定
+            var scaleX = d3.scale.linear()
+                .domain([minX, maxX])
+                .rangeRound([margin.x, w - margin.x])
+                .clamp(true);
+
+            var axisX = d3.svg.axis()
+                .scale(scaleX)
+                .orient("bottom");
+
+            // histgram 初期化
+            var histgram = d3.layout.histogram()
+                               .bins(scaleX.ticks(20))
+                               .value(function(d) { return d.global; })
+
+            // 生データを頻度情報に加工
+            var hDataset = histgram(dataset);
+
+            console.log(hDataset);
+
+            // 気温(Y軸)設定
+            var maxY = d3.max(hDataset, function(d){ return d.y; });
+            var scaleY = d3.scale.linear()
+                .domain([0, maxY])
+                .rangeRound([h - margin.y, margin.y])
+                .nice();
+
+            var axisY = d3.svg.axis()
+                .scale(scaleY)
+                .orient("left");
+
+            // 塗りつぶし色設定
+            var color = d3.scale.quantile()
+                .domain([minX, maxX])
+                .range(['blue','cyan','pink','red']);
+
+
+            var svg = d3.select("#chart").append("svg").attr({width: w, height: h}).style("padding","5px");
+
+            // 平均温度の頻度
+            svg.append("g").selectAll("rect")
+                .data(hDataset)
+                .enter()
+                .append("rect")
+                .attr({
+                    "x" : function(d){ return scaleX(d.x); },
+                    "y" : function(d){ return scaleY(d.y); },
+                    "width" : 10,
+                    "height" : function(d){ return h - margin.y - scaleY(d.y); },
+                    "fill" : function(d){ return color(d.x); }
+                });
+
+            // X軸
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(0," + (h - margin.y) + ")")
+                .call(axisX);
+
+            // Y軸
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(" + margin.x + ",0)")
+                .call(axisY);
+
+            d3.selectAll("button").on("click", function() {
+                var btn = this.value;
+
+                var from = 1891;
+                var to   = 2012;
+
+                if ("all" === btn) {
+                    hDataset = histgram(dataset);
+                } else {
+                    from = Math.max(from, btn);
+                    to   = Math.min(to, from + 30);
+                    var subset = dataset.filter(
+                                     function(elem){
+                                         return (from <= elem.year && elem.year < to);
+                                     }
+                                 );
+                    hDataset = histgram(subset);
+                }
+
+                d3.select("body").select("#from").text(from);
+                d3.select("body").select("#to").text(to);
+
+                svg.select("g").selectAll("rect").data(hDataset)
+                    .transition()
+                    .duration(1000)
+                    .ease("bounce")
+	                .attr("y", function(d){ return scaleY(d.y); })
+	                .attr("height", function(d){ return h - margin.y - scaleY(d.y); });
+            });
+        </script>
+    </body>
+</html>

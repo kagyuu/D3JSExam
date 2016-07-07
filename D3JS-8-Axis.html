@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Axis</title>
+        <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <style type="text/css">
+			.axis path,
+			.axis line {
+				fill: none;
+				stroke: black;
+				shape-rendering: crispEdges;
+			}
+			
+			.axis text {
+				font-family: sans-serif;
+				font-size: 11px;
+			}
+        </style>
+    </head>
+    <body>
+        <script type="text/javascript">
+            var w = 400;
+            var h = 200;
+            var margin = {x:50, y:20};
+            
+            // N225
+            var dataset = [
+                {"date":1371999600000,"value":13062},
+                {"date":1372086000000,"value":12969},
+                {"date":1372172400000,"value":12834},
+                {"date":1372258800000,"value":13213},
+                {"date":1372345200000,"value":13677},
+                {"date":1372604400000,"value":13852}
+            ];
+             
+            // min value
+            var minX = d3.min(dataset, function(d) {
+                return d.date;
+            });
+             
+            // max value
+            var maxX = d3.max(dataset, function(d) {
+                return d.date;
+            });
+            
+            var scaleX = d3.scale.linear()
+                .domain([minX - 86400000, maxX + 86400000])
+                .rangeRound([margin.x, w - margin.x])
+                .clamp(true);
+            
+            var formatX = function(time){
+                var formatter = d3.time.format("%b%d");
+                return formatter(new Date(time));
+            };
+            var axisX = d3.svg.axis()
+                .scale(scaleX)
+                .orient("bottom")
+                .ticks(10) // That's only hint, d3.js will overwrite concise number !
+                .tickFormat(formatX);
+            
+            // min value
+            var minY = d3.min(dataset, function(d) {
+                return d.value;
+            });
+             
+            // max value
+            var maxY = d3.max(dataset, function(d) {
+                return d.value;
+            });
+            
+            var scaleY = d3.scale.linear()
+                .domain([minY - 100, maxY + 100])
+                .nice()
+                .rangeRound([h - margin.y, margin.y])
+                .clamp(true);
+            
+            var axisY = d3.svg.axis()
+                .scale(scaleY)
+                .orient("left")
+                .ticks(5);
+                
+            var svg = d3.select("body").append("svg").attr({width: w, height: h});
+
+            svg.selectAll("circle")
+                .data(dataset)
+                .enter()
+                .append("circle")
+                .attr("cx", function(d){
+                    return scaleX(d.date);
+                })
+                .attr("cy", function(d){
+                    return scaleY(d.value);
+                })
+                .attr("r", "2");
+            
+            svg.append("g").selectAll("text")
+                .data(dataset)
+                .enter()
+                .append("text")
+                .attr({
+                    "font-size" : 10,
+                    "x" : function(d){
+                        return scaleX(d.date);
+                    },
+                    "y" : function(d){
+                        return scaleY(d.value) + 10;
+                    }})
+                .text(function(d){
+                    return d.value;
+                });
+            
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(0," + (h - margin.y) + ")")
+                .call(axisX);                
+            
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(" + margin.x + ",0)")
+                .call(axisY);                
+        </script>
+    </body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Bar</title>
+        <style type="text/css">
+            .axis path,
+            .axis line {
+                fill: none;
+                stroke: black;
+                shape-rendering: crispEdges;
+            }
+ 
+            .axis text {
+                font-family: sans-serif;
+                font-size: 8px;
+            }
+ 
+            #tooltips {
+                position: absolute;
+                padding: 10px;
+                color: black;
+                font-size: 12px;
+                background: white;
+                border-radius: 10px;
+                border-style:solid;
+                border-width:2px;
+                border-color: red;
+                opacity: 0.8
+            }
+ 
+            #tooltips.hidden {
+                display: none;
+            }
+        </style>
+    </head>
+    <body>
+        D3.js EVENT EXAMPLE
+        <div id="tooltips" class="hidden">EVENT</div>
+        <div id="chart" style="border:1px solid">
+        </div>
+        <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <script type="text/javascript">
+            var w = 300;
+            var h = 150;
+            var margin = {x:50, y:20, title:15};
+  
+            // 表示するデータ
+            var dataset = [
+                {fruits:"りんご", amount:"13"},
+                {fruits:"みかん", amount:"4"},
+                {fruits:"ぶどう", amount:"28"},
+            ];
+ 
+            // X軸
+            var scaleX = d3.scale.ordinal()
+                .domain(dataset.map(function(d){return d.fruits;}))
+                .rangeRoundBands([0,w],0.05);
+ 
+            var axisX = d3.svg.axis()
+                .scale(scaleX)
+                .orient("bottom")
+                .tickSize(0);
+ 
+            // Y軸
+            var scaleY = d3.scale.linear()
+                .domain([4, 28])
+                .nice()
+                .rangeRound([margin.y, h - margin.y - margin.title])
+                .clamp(true);
+ 
+            // グラフ描画領域
+            var svg = d3.select("#chart").append("svg").attr({width: w, height: h});
+ 
+            // データ描画領域
+            var dataPane = svg.append("g");
+ 
+            dataPane.selectAll("rect")
+                .data(dataset)
+                .enter()
+                .append("rect")
+                .attr("x"      , function(d){ return scaleX(d.fruits); })
+                .attr("y"      , function(d){ return h - margin.y - scaleY(d.amount); })
+                .attr("width"  , function(d){ return scaleX.rangeBand(); })
+                .attr("height" , function(d){ return scaleY(d.amount); })
+                .attr("fill"   , function(d){ return "りんご" === d.fruits ? "red" : "みかん" === d.fruits ? "orange" : "darkblue"; })
+                .on("mousemove", function(d) {
+                
+                    // d3.event は現在のイベント
+                    d3.event.stopPropagation()
+                    d3.event.preventDefault()
+                    
+                    var mXY = d3.mouse(document.body);
+                    var mXY2 = d3.mouse(document.getElementById("chart"));
+                    
+                    d3.select("#tooltips")
+                        .style("left", (mXY[0] + 10) + "px")
+                        .style("top", (mXY[1] + 10) + "px")
+                        .classed("hidden", false)
+                        .html(d.fruits + " " + d.amount + "<br/>"
+                            + "body からの相対位置 = (" + mXY + ")<br/>"
+                            + "div  からの相対位置 = (" + mXY2 + ")");
+                })
+                .on("mouseout", function(d) {
+                    d3.select("#tooltips")
+                        .classed("hidden", true);                    
+                });
+ 
+            // X軸を描画
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(0," + (h - margin.y) + ")")
+                .call(axisX);
+        </script>
+    </body>
+</html>

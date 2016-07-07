@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Heart</title>
+        <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <style type="text/css">
+            .axisX path,
+            .axisX line {
+                fill: none;
+                stroke: gray;
+                shape-rendering: crispEdges;
+            }
+            .axisX text {
+                font-family: sans-serif;
+                fill: gray;
+                font-size: 9px;
+            }
+            
+            .axisY path,
+            .axisY line {
+                fill: none;
+                stroke: gray;
+                shape-rendering: crispEdges;
+            }
+            .axisY text {
+                font-family: sans-serif;
+                fill: gray;
+                font-size: 9px;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="chart"></div>
+        <button value="in" disabled>Zoom In</button>
+        <button value="out">Zoom Out</button>
+        <script type="text/javascript">
+            function fx(t) {
+                return Math.pow(Math.sin(t), 3);
+            }
+            function fy(t) {
+                return 1.0 + 0.8125 * Math.cos(t) - 0.3125 * Math.cos(2 * t) - 0.125 * Math.cos(3*t) - 0.0625 * Math.cos(4*t);
+            }
+
+            var w = 300;
+            var h = 300;
+            var margin = {x:20, y:20};
+
+            var dataset = new Array();
+            for (var t = 0.0; t < 2*Math.PI; t+=0.1) {
+                dataset.push([fx(t), fy(t)]);
+            }
+
+            var scaleX = d3.scale.linear()
+                .domain([-0.2, 0.2])
+                .rangeRound([margin.x, w - margin.x])
+                .nice();
+
+            var axisX = d3.svg.axis()
+                .scale(scaleX)
+                .orient("bottom");
+
+            var scaleY = d3.scale.linear()
+                .domain([-0.2, 0.2])
+                .rangeRound([h - margin.y, margin.y])
+                .nice();
+
+            var axisY = d3.svg.axis()
+                .scale(scaleY)
+                .orient("left");
+                            
+            var line = d3.svg.area()
+                .x(function(d) { return scaleX(d[0]); })
+                .y(function(d) { return scaleY(d[1]); })
+                .interpolate("monotone");
+                    
+            var svg = d3.select("#chart").append("svg").attr({width: w, height: h});
+            
+            var chartArea 
+                = svg.append("clipPath")
+                    .attr("id", "dataPanel")
+                    .append("rect")
+                    .attr({
+                        x: margin.x,
+                        y: margin.y,
+                        width: w - margin.x * 2,
+                        height: h - margin.y * 2
+                    });
+
+            svg.append("g")
+                .attr("id", "circles")
+                .attr("clip-path", "url(#dataPanel)")
+                .selectAll("circle")
+                .data(dataset)
+                .enter()
+                .append("circle")
+                .attr("cx", function(d){
+                    return scaleX(d[0]);
+                })
+                .attr("cy", function(d){
+                    return scaleY(d[1]);
+                })
+                .attr("fill", "black")
+                .attr("r", 3);
+                                
+            svg.append("g")
+                .attr("id", "line")
+                .attr("clip-path", "url(#dataPanel)")
+                .append("path")
+                .attr("d", line(dataset))
+                .attr("stroke", "black");
+            
+            svg.append("g")
+                .attr("class", "axisX")
+                .attr("transform", "translate(0," + scaleY(0) + ")")
+                .call(axisX);
+
+            svg.append("g")
+                .attr("class", "axisY")
+                .attr("transform", "translate(" + scaleX(0) + ",0)")
+                .call(axisY);
+                
+          d3.selectAll("button").on("click", function() {
+                var btn = this.value;
+                d3.selectAll("button").attr("disabled", null);
+                switch(btn) {
+                case 'in' :
+                    scaleX.domain([-0.2,0.2]);
+                    scaleY.domain([-0.2,0.2]);
+                    break;
+                case 'out' :
+                    minX = d3.min(dataset, function(d) {return d[0];}) - 0.1;
+                    maxX = d3.max(dataset, function(d) {return d[0];}) + 0.1;
+ 
+                    minY = d3.min(dataset, function(d) {return d[1];});
+                    maxY = d3.max(dataset, function(d) {return d[1];});                    
+                     
+                    scaleX.domain([minX,maxX]).nice();
+                    scaleY.domain([minY,maxY]).nice();
+                    break;
+                }
+                
+                var DULATION = 3000;
+                svg.select("#circles").selectAll("circle")
+                    .data(dataset)
+                    .transition()
+                    .duration(DULATION)
+                    .ease("bounce")
+                    .each("start", function(){
+                        d3.select(this)
+                            .attr("fill","red");
+                    })
+                    .each("end", function(){
+                        d3.select(this)
+                            .attr("fill","pink")
+                    })
+                    .attr("cx", function(d){
+                        return scaleX(d[0]);
+                    })
+                    .attr("cy", function(d){
+                        return scaleY(d[1]);
+                    })
+                    .attr("r", 0);
+                    
+                svg.select("#line").selectAll("path")
+                    .data(dataset)
+                    .transition()
+                    .duration(DULATION)
+                    .ease("bounce")
+                    .attr("d", line(dataset))
+                    .attr("stroke", "pink")
+                    .attr("stroke-width", 2);
+
+                svg.select(".axisX")
+                    .transition()
+                    .duration(DULATION)
+                    .ease("bounce")
+                    .call(axisX)
+                    .attr("transform", "translate(0," + scaleY(0) + ")");
+                     
+                svg.select(".axisY")
+                    .transition()
+                    .duration(DULATION)
+                    .ease("bounce")
+                    .call(axisY); 
+            });
+        </script>
+    </body>
+</html>

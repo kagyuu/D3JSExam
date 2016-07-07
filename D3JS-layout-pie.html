@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Pie</title>
+        <style type="text/css">
+            text {
+                font-family: sans-serif;
+                font-size: 10px;
+                fill: white;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="chart">
+        </div>
+        <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <script type="text/javascript">
+            //Width and height
+            var w = 600;
+            var h = 300;
+
+            // グラフ描画領域
+            var svg = d3.select("#chart").append("svg").attr({width: w, height: h});
+
+            // データ 
+            // (順番がでたらめになっているけど、ソートされる)
+            // (ソート順を変えたければ、d3.layout.pie().sort(function(a,b){...}) 
+            //  で比較用の function を指定する。d3.ascending ,d3.descending を使える)
+            var dataset = [
+                {votes: 71076,name:"柏木 由紀"},  {votes:67339,name:"指原 莉乃"},
+                {votes: 54483,name:"小嶋 陽菜"},  {votes:50483,name:"板野 友美"},
+                {votes: 67017,name:"篠田 麻里子"},{votes:65480,name:"高橋 みなみ"},
+                {votes: 45747,name:"松井 珠理奈"},{votes:42030,name:"松井 玲奈"},
+                {votes:108837,name:"大島 優子"},  {votes:72574,name:"渡辺 麻友"},
+                {votes: 40261,name:"宮澤 佐江"},  {votes:27005,name:"河西 智美"}];
+
+            var outerRadius = w / 2;
+            var innerRadius = w / 16;
+
+            // {startAngle, endAngle} を与えるとポリゴンを返す function
+            var arc = d3.svg.arc()
+                            .innerRadius(innerRadius)
+                            .outerRadius(outerRadius);
+
+            // データを与えると {startAngle, endAngle} の配列を返す function
+            // (アニメーションの初期状態)
+            var pie = d3.layout.pie()
+                            .value(function(d){ return d.votes; })
+                            .startAngle(- Math.PI/2)
+                            .endAngle(- Math.PI/2);
+
+            // データを与えると {startAngle, endAngle} の配列を返す function
+            // (アニメーションの最終状態)
+            var pie2 = d3.layout.pie()
+                            .value(function(d){ return d.votes; })
+                            .startAngle(- Math.PI/2)
+                            .endAngle(Math.PI/2);
+
+            // color(i) で適当な色を返してくれる
+            var color = d3.scale.category10();
+
+            //Set up groups
+            var arcs = svg.selectAll("g.arc")
+                          .data(pie(dataset))
+                          .enter()
+                          .append("g")
+                          .attr("class", "arc")
+                          .attr("transform", "translate(" + outerRadius + "," + outerRadius + ")");
+
+            //Draw arc paths
+            arcs.append("path")
+                .attr("fill", function(d, i) {
+                    return color(i);
+                })
+                .attr("d", arc)
+                .style("opacity", 0.8)
+                .each(function(d) {
+                    // DOMオブジェクト <path> に _current フィールドを追加して、
+                    // 扇形の基本データ {startAngle, endAngle} を格納する
+                    this._current = d;
+                });
+
+            //Labels
+            arcs.append("text")
+                .attr("class", "name")
+                .attr("transform", function(d) {
+                    // console.log(arc.centroid(d));
+                    var center = arc.centroid(d);
+                    return "translate(" + center + ")";
+                })
+                .attr("text-anchor", "middle")
+                .text(function(d, i) {
+                    return dataset[i].name;
+                })
+                .each(function(d) { this._current = d; });
+
+            //Labels
+            arcs.append("text")
+                .attr("class", "vote")
+                .attr("transform", function(d) {
+                    var center = arc.centroid(d);
+                    center[1] += 12;
+                    return "translate(" + center + ")";
+                })
+                .attr("text-anchor", "middle")
+                .text(function(d, i) {
+                    return dataset[i].votes;
+                })
+                .each(function(d) { this._current = d; });
+
+            // Animation
+            var arcs2 = svg.selectAll("g.arc").data(pie2(dataset));
+
+            arcs2.select("path")
+                .transition()
+                .duration(6000)
+                .ease("bounce")
+                .attrTween("d", function(d, i){
+
+                    // C = (d3.interpolate(A,B))(t) は、
+                    // A,Bの各要素を t (0～1) で案配した C を返す
+                    // Ci = (Ai * (t-1) + Bi * t)
+                    var iop = d3.interpolate(this._current, d);
+
+                    // <path> の d 要素に、iop(t) で返される {startAngle, endAngle}
+                    // を SVG のポリゴンに変換したものを返す
+                    return function(t){return arc(iop(t));};
+                });
+
+            arcs2.select("text.name")
+                .transition()
+                .duration(6000)
+                .ease("bounce")
+                .attrTween("transform", function(d, i){
+                    var iop = d3.interpolate(this._current, d);
+                    return function(t){
+                        var center = arc.centroid(iop(t));
+                        return "translate(" + center + ")"
+                    };
+                });
+
+            arcs2.select("text.vote")
+                .transition()
+                .duration(6000)
+                .ease("bounce")
+                .attrTween("transform", function(d, i){
+                    var iop = d3.interpolate(this._current, d);
+                    return function(t){
+                        var center = arc.centroid(iop(t));
+                        center[1] += 12;
+                        return "translate(" + center + ")"
+                    };
+                });
+
+        </script>
+    </body>
+</html>

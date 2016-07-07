@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Sequence</title>
+        <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <script type="text/javascript" src="temp.js" charset="utf-8"></script>
+        <style type="text/css">
+            .axis path,
+            .axis line {
+                fill: none;
+                stroke: black;
+                shape-rendering: crispEdges;
+            }
+             
+            .axis text {
+                font-family: sans-serif;
+                font-size: 8px;
+            }
+        </style>
+    </head>
+    <body>
+        平均気温の変化 (2000年基準)
+        <div id="chart"></div>
+        <script type="text/javascript">
+            var w = 480;
+            var h = 240;
+            var margin = {x:50, y:20};
+             
+            // min value
+            var minX = d3.min(dataset, function(d) {
+                return d.year;
+            });
+              
+            // max value
+            var maxX = d3.max(dataset, function(d) {
+                return d.year;
+            });
+             
+            var scaleX = d3.scale.linear()
+                .domain([minX, maxX])
+                .rangeRound([margin.x, w - margin.x])
+                .clamp(true);
+             
+            var axisX = d3.svg.axis()
+                .scale(scaleX)
+                .orient("bottom");
+             
+            // min value
+            var minY = d3.min(dataset, function(d) {
+                return Math.min(Math.min(d.global, d.n), d.s);
+            });
+              
+            // max value
+            var maxY = d3.max(dataset, function(d) {
+                return Math.max(Math.max(d.global, d.n), d.s);
+            });
+             
+            var scaleY = d3.scale.linear()
+                .domain([minY, maxY])
+                .nice()
+                .rangeRound([h - margin.y, margin.y])
+                .clamp(true);
+             
+            var axisY = d3.svg.axis()
+                .scale(scaleY)
+                .orient("left");
+                             
+            var svg = d3.select("#chart").append("svg").attr({width: w, height: h}).style("padding","5px");
+
+            // 南半球の温度変化
+            var sLine = d3.svg.line()
+                .x(function(d) { return scaleX(d.year); })
+                .y(function(d) { return scaleY(d.s); });
+
+            svg.append("path")
+                .attr("d", sLine(dataset))
+                .attr("stroke", "pink")
+                .attr("stroke-width", 1)
+                .attr("fill", "none");
+            
+            // 北半球の温度変化
+            var nLine = d3.svg.line()
+                .x(function(d) { return scaleX(d.year); })
+                .y(function(d) { return scaleY(d.n); });
+
+            svg.append("path")
+                .attr("d", nLine(dataset))
+                .attr("stroke", "cyan")
+                .attr("stroke-width", 1)
+                .attr("fill", "none");
+            
+            // 世界平均の温度変化
+            var gLine = d3.svg.line()
+                .x(function(d) { return scaleX(d.year); })
+                .y(function(d) { return scaleY(d.global); });
+
+            svg.append("path")
+                .attr("d", gLine(dataset))
+                .attr("stroke", "black")
+                .attr("stroke-width", 2)
+                .attr("fill", "none");
+
+            // X軸
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(0," + (h - margin.y) + ")")
+                .call(axisX);                
+                 
+            // Y軸
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(" + margin.x + ",0)")
+                .call(axisY);
+        </script>
+    </body>
+</html>

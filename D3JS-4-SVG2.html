@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>SVG2</title>
+    <style>
+        .myrect {
+            stroke : black;
+            stroke-width : 1;
+        }
+    </style>        
+</head>
+<body>
+    <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script>
+        var dataset = [11, 25, 15, 20, 4, 8, 16, 32];
+
+        var w = 400;
+        var h = 100;
+        var margin = 20;
+
+        var svg = d3.select("body").append("svg").attr({width:w, height:h});
+
+        var rect = svg.selectAll("rect")
+            .data(dataset)
+            .enter()
+            .append("rect");
+        
+        rect
+            .classed("myrect", true)
+            .attr({
+                "x" : function(d, i){
+                    return (i * 50);
+                },
+                "y" : function(d, i){
+                    return h - margin - d;
+                },
+                "height" : function(d, i){
+                    return d;
+                },
+                "width" : 45,
+                "fill" : function(d, i) {
+                    return "rgb(" + (d*10) + ",255,255)";
+                }
+            });
+            
+        var labels = svg.selectAll("text")
+            .data(dataset)
+            .enter()
+            .append("text");
+        
+        labels
+            .attr({
+                "x" : function(d, i){
+                    return (i * 50);
+                },
+                "y" : function(d, i){
+                    return h - margin - d;
+                }})
+            .text(function(d, i){
+                return d;
+            });
+            
+        svg.append("line")
+            .attr({
+                "x1" : 0,
+                "y1" : function(){
+                    return h - margin;
+                },
+                "x2" : function() {
+                    return w;
+                },
+                "y2" : function(){
+                    return h - margin;
+                },
+                "stroke" : "black"});
+            
+    </script>
+</body>
+</html>

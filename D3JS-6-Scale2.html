@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Scale2</title>
+        <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    </head>
+    <body>
+        <script type="text/javascript">
+            var WEEKDAY = ['日','月','火','水','木','金','土'];
+            var w = 400;
+            var h = 100;
+
+            // N225
+            var dataset = [
+                {"date":1372078863613,"value":13062},
+                {"date":1372165263613,"value":12969},
+                {"date":1372251663613,"value":12834},
+                {"date":1372338063613,"value":13213},
+                {"date":1372424463613,"value":13677},
+                {"date":1372683663613,"value":13852}
+            ];
+             
+            // min value
+            var minX = d3.min(dataset, function(d) {
+                return d.date;
+            });
+             
+            // max value
+            var maxX = d3.max(dataset, function(d) {
+                return d.date;
+            });
+            
+            var scaleX = d3.scale.linear()
+                .domain([minX, maxX])
+                .nice()             // input domain を適当にマージンを取って拡大
+                .rangeRound([0, w]) // output range (画面上のピクセル位置) を整数に丸める
+                .clamp(true);       // (val > max) ? (max) : (val < min ? min : val) 
+            
+            // min value
+            var minY = d3.min(dataset, function(d) {
+                return d.value;
+            });
+             
+            // max value
+            var maxY = d3.max(dataset, function(d) {
+                return d.value;
+            });
+             
+            // margin
+            var marginY = 1000;
+            
+            var scaleY = d3.scale.linear()
+                .domain([minY - marginY, maxY + marginY])
+                .nice()
+                .rangeRound([h, 0]) // Technique! minY は (x, 100)にプロット、maxY は (x,0) にプロット
+                .clamp(true);
+            
+            var svg = d3.select("body").append("svg").attr({width:w, height:h});
+             
+            svg.selectAll("circle")
+                .data(dataset)
+                .enter()
+                .append("circle")
+                .attr("cx", function(d){
+                    return scaleX(d.date);
+                })
+                .attr("cy", function(d){
+                    return scaleY(d.value);
+                })
+                .attr("r", "2");
+                                 
+            svg.append("g").selectAll("text")
+                .data(dataset)
+                .enter()
+                .append("text")
+                .attr({
+                    "font-size" : 10,
+                    "text-anchor" : function(d, i){
+                        return (dataset.length == i+1) ? "end" : "start";
+                    },
+                    "x" : function(d){
+                        return scaleX(d.date);
+                    },
+                    "y" : function(d){
+                        return scaleY(d.value) + 10;
+                    }})
+                .text(function(d){
+                    var date = new Date();
+                    date.setTime(d.date);
+                    return (date.getMonth() + 1) + "-" + date.getDate() + "(" + WEEKDAY[date.getDay()] + ")";
+                });
+                
+            svg.append("g").selectAll("text")
+                .data(dataset)
+                .enter()
+                .append("text")
+                .attr({
+                    "font-size" : 10,
+                    "text-anchor" : function(d, i){
+                        return (dataset.length == i+1) ? "end" : "start";
+                    },
+                    "x" : function(d){
+                        return scaleX(d.date);
+                    },
+                    "y" : function(d){
+                        return scaleY(d.value) + 20;
+                    }})
+                .text(function(d){
+                    return d.value;
+                });
+                
+        </script>
+    </body>
+</html>

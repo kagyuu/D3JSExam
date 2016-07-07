@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+
+    <title>D3 Globe</title>
+    <link rel="stylesheet" type="text/css" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css">
+    <style type="text/css">
+        .land {
+            fill : lime;
+            stroke : none;
+        }
+        .land-boundary {
+            fill: none;
+            stroke: gray;
+            stroke-dasharray: 2,2;
+            stroke-linejoin: round;
+        }
+        .land-sea-boundary {
+            fill: none;
+            stroke: gray;
+            stroke-width : 0.3;
+        }
+        .river {
+            fill: none;
+            stroke: blue;
+            stroke-width : 0.3;
+        }
+        .lake {
+            fill: blue;
+            stroke: none;
+        }
+        .graticule {
+            fill: none;
+            stroke: black;
+            stroke-width: .5;
+            stroke-opacity: .5;
+        }
+        td {
+            padding-left: 20px;
+        }
+    </style>
+    <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script type="text/javascript" src="http://d3js.org/topojson.v1.min.js" charset="utf-8"></script>
+    <script type="text/javascript" src="http://d3js.org/d3.geo.projection.v0.min.js" charset="utf-8"></script>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-2.0.3.min.js" charset="utf-8"></script>
+    <script type="text/javascript" src="http://code.jquery.com/ui/1.10.3/jquery-ui.js" charset="utf-8"></script>    
+</head>
+
+<body>
+<div style="position:absolute;color:black;background:orange;opacity:0.6">
+    <table border="0">
+        <tbody>
+            <tr>
+                <td>distance</td>
+                <td width="300px"><div id="slider_distance"></div></td>
+                <td><span id="value_distance"></span></td>
+            </tr>
+            <tr>
+                <td>scale</td>
+                <td width="300px"><div id="slider_scale"></div></td>
+                <td><span id="value_scale"></span></td>
+            </tr>
+            <tr>
+                <td>rotate</td>
+                <td width="300px"><div id="slider_beta"></div></td>
+                <td><span id="value_rotate"></span></td>
+            </tr>            
+            <tr>
+                <td>tilt</td>
+                <td width="300px"><div id="slider_tilt"></div></td>
+                <td><span id="value_tilt"></span></td>
+            </tr>            
+            <tr>
+                <td>clip angle</td>
+                <td width="300px"><div id="slider_clipangle"></div></td>
+                <td><span id="value_clipangle"></span></td>
+            </tr>            
+            <tr>
+                <td>precision</td>
+                <td width="300px"><div id="slider_precision"></div></td>
+                <td><span id="value_precision"></span></td>
+            </tr>            
+        </tbody>
+    </table>
+</div>
+    <script type="text/javascript">
+
+        var width = 800;
+        var height = 480;
+
+        var lon = 0;
+        var lat = 0;
+        var dlon = 5/180;
+        var dlat = 1;
+
+        var beta = 180;
+
+        var distance = 1.5;
+        var scale = 500;
+        var tilt = 40;
+        var clipangle = 60;
+        var precision = 0.1;
+
+        $("#slider_distance").slider({
+            min: 1.0,
+            max: 10.0,
+            step: 0.1,
+            value: distance,
+            change : function(event, ui) {
+                distance = ui.value;
+                $("#value_distance").text(distance);
+            }
+        });
+
+        $("#slider_scale").slider({
+            min: 100,
+            max: 2000,
+            step: 100,
+            value: scale,
+            change : function(event, ui) {
+                scale = ui.value;
+                $("#value_scale").text(scale);
+            }
+        });
+
+        $("#slider_beta").slider({
+            min: 0,
+            max: 360,
+            step: 10,
+            value: beta,
+            change : function(event, ui) {
+                beta = ui.value;
+            }
+        });
+
+        $("#slider_tilt").slider({
+            min: 0,
+            max: 100,
+            step: 10,
+            value: tilt,
+            change : function(event, ui) {
+                tilt = ui.value;
+                $("#value_tilt").text(tilt);
+            }
+        });
+
+        $("#slider_clipangle").slider({
+            min: 0,
+            max: 180,
+            step: 10,
+            value: clipangle,
+            change : function(event, ui) {
+                clipangle = ui.value;
+                $("#value_clipangle").text(clipangle);
+            }
+        });
+
+        $("#slider_precision").slider({
+            min: 0,
+            max: 1,
+            step: 0.1,
+            value: precision,
+            change : function(event, ui) {
+                precision = ui.value;
+                $("#value_precision").text(precision);
+            }
+        });
+
+        $("#value_distance").text(distance);
+        $("#value_scale").text(scale);
+        $("#value_rotate").text("[" + lon + "," + lat + "," + beta + "]");
+        $("#value_tilt").text(tilt);
+        $("#value_clipangle").text(clipangle);
+        $("#value_precision").text(precision);
+
+        var projection = d3.geo.satellite()
+            .distance(distance)
+            .scale(scale)
+            .rotate([lon, lat, beta])
+            .center([0,0])
+            .tilt(tilt)
+            .clipAngle(clipangle)
+            .precision(precision)
+            .translate([width / 2, height / 2]);
+
+        var path = d3.geo.path()
+                .projection(projection);
+                
+        var graticule = d3.geo.graticule();
+        
+        var svg = d3.select("body").append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+        //var url = "index.php?plugin=attach&pcmd=open&file=world.json&refer=HTML%20D3.js%20Globe";
+        var url = "http://localhost:8008/world.json";
+
+        d3.json(url, function(error, data){
+
+            var ocean = topojson.feature(data, data.objects.ocean);
+            var land = topojson.feature(data, data.objects.land);
+            var river = topojson.feature(data, data.objects.river);
+            var lake = topojson.feature(data, data.objects.lake);
+
+            // 経線、緯線
+            svg.append("path")
+                .datum(graticule)
+                .attr("class", "graticule")
+                .attr("d", path);
+                
+            // 国
+            svg.selectAll(".lands")
+                .data(land.features)
+                .enter()
+                .append("path")
+                .attr("class", "land")
+                .attr("d", path);
+
+            // 国境 (他のポリゴンと共有)
+            svg.append("path")
+                .datum(topojson.mesh(data, data.objects.land, function(a, b) { return a !== b; }))
+                .attr("d", path)
+                .attr("class", "land-boundary");
+
+            // 海岸 (他のポリゴンと共有しない)
+            svg.append("path")
+                .datum(topojson.mesh(data, data.objects.land, function(a, b) { return a === b; }))
+                .attr("d", path)
+                .attr("class", "land-sea-boundary");
+
+
+            // 河川
+            svg.selectAll(".river")
+                .data(river.features)
+                .enter()
+                .append("path")
+                .attr("class", "river")
+                .attr("d", path);
+
+
+            // 湖沼
+            svg.selectAll(".lake")
+                .data(lake.features)
+                .enter()
+                .append("path")
+                .attr("class", "lake")
+                .attr("d", path);
+
+            // アニメーション開始
+            rotate();
+
+        }); // end of d3.json
+        
+        function rotate() {
+            
+            lon += dlon;
+            lat += dlat;
+            if (lat > 90) {
+                lat = 90;
+                dlat *= -1;
+                dlon *= -1;
+                lon = (lon + 180) % 360;
+                beta = (beta + 180) % 360;
+                 $("#slider_beta").slider("value", beta);
+           } else if (lat < -90) {
+                lat = -90;
+                dlat *= -1;
+                dlon *= -1;
+                lon = (lon + 180) % 360;
+                beta = (beta + 180) % 360;
+                $("#slider_beta").slider("value", beta);
+            }
+
+            $("#value_rotate").text("[" + Math.floor(lon) + "," + Math.floor(lat) + "," + beta + "]");
+            
+            projection
+                .distance(distance)
+                .scale(scale)
+                .rotate([lon, lat, beta])
+                .center([0,0])
+                .tilt(tilt)
+                .clipAngle(clipangle)
+                .precision(precision);
+            
+            svg.selectAll("path")
+                .attr("d", path);
+            
+            setTimeout("rotate()", 100);
+        }
+
+    </script>
+</body>
+</html>

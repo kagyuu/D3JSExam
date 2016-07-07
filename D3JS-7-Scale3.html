@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Scale3</title>
+        <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    </head>
+    <body>
+        <script type="text/javascript">
+            var w = 300;
+            var h = 200;
+            var margin = {x:20, y:20};
+
+            var dataset = [0.1,0.2,0.4,1,2,4,10,20,40,100,200,400,1000];
+
+            var scaleX = d3.scale.linear()
+                .domain([1, dataset.length])
+                .range([0 + margin.x ,w - margin.x])
+                .nice();
+
+            var linearY = d3.scale.linear()
+                    .domain([d3.min(dataset), d3.max(dataset)])
+                    .range([h - margin.y , 0 + margin.y])
+                    .nice();
+                    
+            var sqrtY = d3.scale.sqrt()
+                    .domain([d3.min(dataset), d3.max(dataset)])
+                    .range([h - margin.y , 0 + margin.y])
+                    .nice();
+                    
+            var logY = d3.scale.log()
+                    .domain([d3.min(dataset), d3.max(dataset)])
+                    .range([h - margin.y , 0 + margin.y])
+                    .nice();
+                    
+            var powY = d3.scale.pow().exponent(0.5)
+                    .domain([d3.min(dataset), d3.max(dataset)])
+                    .range([h - margin.y , 0 + margin.y])
+                    .nice();
+                    
+            var pow1Y = d3.scale.pow()
+                    .domain([d3.min(dataset), d3.max(dataset)])
+                    .range([h - margin.y , 0 + margin.y])
+                    .nice();
+                    
+            var pow2Y = d3.scale.pow().exponent(2)
+                    .domain([d3.min(dataset), d3.max(dataset)])
+                    .range([h - margin.y , 0 + margin.y])
+                    .nice();
+                    
+            var quantizeY = d3.scale.quantize()
+                    .domain([d3.min(dataset), d3.max(dataset)]) // Quantize's domain is range (D3.js use 1st and last number)
+                    .range([h - margin.y , h/2, 0 + margin.y]); // we can specify ['red','yellow','blue'] also.
+
+            var quantileY = d3.scale.quantile()
+                    .domain(dataset)                            // Quantize's domain is discrete values
+                    .range([h - margin.y , h/2, 0 + margin.y]); // we can specify ['red','yellow','blue'] also.
+                    
+            
+            var color = d3.scale.threshold()
+                    .domain([1,10,100,1000])
+                    .range(['cyan', 'blue','yellowgreen','orange','red'])
+            
+            plot("linear scale", scaleX, linearY);
+            plot("sqrt scale", scaleX, sqrtY);
+            plot("log scale", scaleX, logY);
+            plot("pow(0.5) scale (=sqrt)", scaleX, powY);
+            plot("pow(1.0) scale (=linear)", scaleX, pow1Y);
+            plot("pow(2.0) scale", scaleX, pow2Y);
+            plot("quantize scale", scaleX, quantizeY);
+            plot("quantile scale", scaleX, quantileY);
+
+            function plot(explanation, scaleX, scaleY) {
+                var svg = d3.select("body").append("svg").attr({width:w, height:h}).style("padding","5px");
+
+                svg.append("rect").attr({x:0, y:0, width:w, height:h, stroke:"black", fill:"snow"});
+                
+                svg.selectAll("circle")
+                    .data(dataset)
+                    .enter()
+                    .append("circle")
+                    .attr("cx", function(d,i){
+                        return scaleX(i+1);
+                    })
+                    .attr("cy", function(d){
+                        return scaleY(d);
+                    })
+                    .attr("r", "4")
+                    .attr("fill" , function(d){
+                        return color(d);
+                    });
+
+                svg.selectAll("text")
+                    .data(dataset)
+                    .enter()
+                    .append("text")
+                    .attr({
+                        "font-size" : 10,
+                        "font-family" : "sans-serif",
+                        "text-anchor" : "middle",
+                        "x" : function(d,i){
+                            return scaleX(i+1);
+                        },
+                        "y" : function(d,i){
+                            return scaleY(d) - 10;
+                        }})
+                    .text(function(d){
+                        return d;
+                    });
+                
+                svg.append("text")
+                    .attr({
+                        "font-size" : 15,
+                        "text-anchor" : "start",
+                        "x" : 15,
+                        "y" : 15})
+                    .text(explanation);
+            }
+        </script>
+    </body>
+</html>

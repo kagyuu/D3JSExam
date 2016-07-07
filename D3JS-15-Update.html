@@ -1,0 +1,242 @@
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Bar</title>
+        <style type="text/css">
+			.axis path,
+			.axis line {
+				fill: none;
+				stroke: black;
+				shape-rendering: crispEdges;
+			}
+
+			.axis text {
+				font-family: sans-serif;
+				font-size: 8px;
+			}
+
+			#tooltips {
+    			position: absolute;
+    			padding: 10px;
+    			color: black;
+    			font-size: 12px;
+    			background: white;
+    			border-radius: 10px;
+    			border-style:solid;
+    			border-width:2px;
+    			border-color: red;
+    			opacity: 0.8
+			}
+
+			#tooltips.hidden {
+			    display: none;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="chart">
+            <div id="tooltips" class="hidden">TOOLTIPS</div>
+        </div>
+        <button value="prev">Prev</button>
+        <button value="next">Next</button>
+        <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <script type="text/javascript" src="N225.js" charset="utf-8"></script>
+        <script type="text/javascript">
+            var w = 700;
+            var h = 150;
+            var margin = {x:50, y:20, title:15};
+
+            var minY = d3.min(N225, function(d) { return d.end; });
+            var maxY = d3.max(N225, function(d) { return d.end; });
+
+            // 表示するデータ
+            var dataset = new Array();
+            dataset.push(getData("2013-07"));
+
+            // X軸
+            var scaleX = d3.scale.ordinal()
+                .domain(dataset.map(function(d){return d.date;}))
+                .rangeRoundBands([0,w],0.05);
+
+            var axisX = d3.svg.axis()
+                .scale(scaleX)
+                .orient("bottom")
+                .tickSize(0);
+
+            // Y軸
+            var scaleY = d3.scale.linear()
+                .domain([minY, maxY])
+                .nice()
+                .rangeRound([margin.y, h - margin.y - margin.title])
+                .clamp(true);
+
+            // グラフ描画領域
+            var svg = d3.select("#chart").append("svg").attr({width: w, height: h});
+
+            // データ描画領域
+            var dataPane = svg.append("g");
+
+            // 棒グラフの集合 (棒グラフ一つ分が <g> になる)
+            dataPane.selectAll("g")
+                .data(dataset)
+                .enter()
+                .append("g")
+                .each(function(d,i){
+                    addOrUpdateBar(
+                        d3.select(this).append("rect"),
+                        d3.select(this).append("rect"),
+                        d3.select(this).append("text"),
+                        d);
+                })
+                .on("mouseover", function(d,i){
+                    showTooltips(d);
+                    d3.select(this).select(".bar").transition().duration(500).attr("fill","orange");
+                })
+                .on("mouseout", function(d,i){
+                    hideTooltips();
+                    d3.select(this).select(".bar").transition().duration(500)
+                        .attr("fill","rgb(64, 64, " + Math.floor(d.end * 255 / maxY) + ")");
+                });
+
+            // X軸を描画
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(0," + (h - margin.y) + ")")
+                .call(axisX);
+
+            // ボタンをクリックしたときのイベント処理
+            d3.selectAll("button").on("click", function() {
+
+                var btnName = this.value;
+
+                switch(this.value){
+                case "prev" :
+                    var newData = getPrev(dataset[0].date);
+                    if (newData) {
+                        dataset.unshift(newData);
+                        while(dataset.length > 10) {
+                            dataset.pop();
+                        }
+                    } else {
+                        if(dataset.length > 1) {
+                            dataset.pop();
+                        }
+                    }
+                    break;
+                case "next" :
+                    var newData = getNext(dataset[dataset.length - 1].date);
+                    if (newData) {
+                        dataset.push(newData);
+                        while(dataset.length > 10) {
+                            dataset.shift();
+                        }
+                    } else {
+                        if(dataset.length > 1) {
+                            dataset.shift();
+                        }
+                    }
+                    break;
+                }
+
+                scaleX
+                    .domain(dataset.map(function(d){return d.date;}));
+
+                scaleY
+                    .domain([minY, maxY])
+                    .rangeRound([margin.y, h - margin.y - margin.title]);
+
+                var update = dataPane.selectAll("g").data(dataset);
+
+                update
+                    .each(function(d,i){
+                    addOrUpdateBar(
+                        d3.select(this).select(".space").transition(),
+                        d3.select(this).select(".bar").transition().duration(500).ease("bounce"),
+                        d3.select(this).select("text").transition().duration(500).ease("bounce"),
+                        d);
+                    });
+
+                update.enter()
+                    .append("g")
+                    .each(function(d,i){
+                        addOrUpdateBar(
+                            d3.select(this).append("rect"),
+                            d3.select(this).append("rect"),
+                            d3.select(this).append("text"),
+                            d);
+                    })
+                    .on("mouseover", function(d,i){
+                        showTooltips(d);
+                        d3.select(this).select(".bar").transition().duration(500).attr("fill","orange");
+                    })
+                    .on("mouseout", function(d,i){
+                        hideTooltips();
+                        d3.select(this).select(".bar").transition().duration(500)
+                            .attr("fill","rgb(64, 64, " + Math.floor(d.end * 255 / maxY) + ")");
+                    });
+
+                update.exit()
+                    .each(function(d,i){
+                        d3.select(this).select("rect").transition().duration(500).ease("bounce").attr("x",w);
+                        d3.select(this).select("text").transition().duration(500).ease("bounce").attr("x",w);
+                    })
+                    .remove();
+
+
+                svg.select(".axis")
+                    .transition()
+                    .duration(500)
+                    .ease("bounce")
+                    .call(axisX)
+                    .attr("transform", "translate(0," + (h - margin.y) + ")")
+            });
+
+            function addOrUpdateBar(spaceRect, barRect, text, d) {
+                spaceRect.attr({
+                        "class" : "space",
+                        "x" : scaleX(d.date),
+                        "y" : 0,
+                        "width" : scaleX.rangeBand(),
+                        "height" : h,
+                        "fill" : "rgba(0,0,0,0)"
+                    });
+
+                barRect.attr({
+                        "class" : "bar",
+                        "x" : scaleX(d.date),
+                        "y" : h - margin.y - scaleY(d.end),
+                        "width" : scaleX.rangeBand(),
+                        "height" : scaleY(d.end),
+                        "fill" : "rgb(64, 64, " + Math.floor(d.end * 255 / maxY) + ")"
+                    });
+
+                text.text(Math.floor(d.end)).attr({
+                        "x" : scaleX(d.date) + scaleX.rangeBand() / 2,
+                        "y" : h - margin.y - scaleY(d.end) + 14,
+                        "font-size" : "10px",
+                        "fill" : "white",
+                        "text-anchor" : "middle"
+                    });
+            }
+
+            function showTooltips(d) {
+                d3.select("#tooltips")
+                    .style("left", (scaleX(d.date) + scaleX.rangeBand()) + "px")
+                    .style("top", (margin.y) + "px")
+                    .classed("hidden", false)
+                    .html(d.date
+                        + "<br/>始値" + Math.floor(d.start)
+                        + "<br/>安値" + Math.floor(d.low)
+                        + "<br/>高値" + Math.floor(d.high)
+                        + "<br/>終値" + Math.floor(d.end));
+            }
+
+            function hideTooltips() {
+                d3.select("#tooltips")
+                    .classed("hidden", true);
+            }
+        </script>
+    </body>
+</html>

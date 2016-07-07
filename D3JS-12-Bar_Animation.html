@@ -1,0 +1,175 @@
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Bar</title>
+        <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <style type="text/css">
+			.axis path,
+			.axis line {
+				fill: none;
+				stroke: black;
+				shape-rendering: crispEdges;
+			}
+			
+			.axis text {
+				font-family: sans-serif;
+				font-size: 8px;
+			}
+        </style>
+    </head>
+    <body>
+        <div id="chart"></div>
+        <button id="2011-06">2011-06</button>
+        <button id="2011-09">2011-09</button>
+        <button id="2012-01">2012-01</button>
+        <button id="2012-05">2012-05</button>
+        <select id="ease">
+            <option value="linear">linear</option>
+            <option value="quad">quad</option>
+            <option value="cubic-in-out" selected="">cubic</option>
+            <option value="sin">sin</option>
+            <option value="exp">exp</option>
+            <option value="bounce">bounce</option>
+        </select>
+        <script type="text/javascript">
+            var w = 300;
+            var h = 300;
+            var margin = {x:50, y:20, title:15};
+            
+            // Browser Share (2011-06 to 2012-05)
+            var dataset = {
+                "2012-05" : [
+                    {"browser":"IE","share":28.87},
+                    {"browser":"Chrome","share":29.15},
+                    {"browser":"Firefox","share":22.97},
+                    {"browser":"Safari","share":8.68},
+                    {"browser":"Opera","share":3.80},
+                    {"browser":"Android","share":2.13}
+                ],
+                "2012-01" : [
+                    {"browser":"IE","share":34.27},
+                    {"browser":"Chrome","share":25.08},
+                    {"browser":"Firefox","share":23.24},
+                    {"browser":"Safari","share":7.98},
+                    {"browser":"Opera","share":3.84},
+                    {"browser":"Android","share":1.71}
+                ],
+                "2011-09" : [
+                    {"browser":"IE","share":38.85},
+                    {"browser":"Chrome","share":22.02},
+                    {"browser":"Firefox","share":24.98},
+                    {"browser":"Safari","share":6.64},
+                    {"browser":"Opera","share":3.06},
+                    {"browser":"Android","share":1.34}
+                ],
+                "2011-06" : [
+                    {"browser":"IE","share":40.73},
+                    {"browser":"Chrome","share":19.30},
+                    {"browser":"Firefox","share":26.49},
+                    {"browser":"Safari","share":4.74},
+                    {"browser":"Opera","share":1.63},
+                    {"browser":"Android","share":1.28}
+                ]
+            }
+            
+            var scaleX = d3.scale.ordinal()
+                .domain(dataset["2011-06"].map(function(d){return d.browser;}))
+                .rangeRoundBands([0,w],0.05);
+            
+            var axisX = d3.svg.axis()
+                .scale(scaleX)
+                .orient("bottom")
+                .tickSize(0); // 棒グラフなので X 軸から、値ラベルまでの伸びるヒゲは無しにする
+            
+            var minY = Number.MAX_VALUE;
+            var maxY = Number.MIN_VALUE;
+            
+            for (key in dataset) {
+                minY = Math.min( minY, d3.min(dataset[key], function(d) { return d.share; }));
+                maxY = Math.max( maxY, d3.max(dataset[key], function(d) { return d.share; }));
+            }
+            
+            var scaleY = d3.scale.linear()
+                .domain([minY, maxY])
+                .nice()
+                .rangeRound([margin.y, h - margin.y - margin.title])
+                .clamp(true);
+            
+            var svg = d3.select("#chart").append("svg").attr({width: w, height: h});
+                            
+            svg.append("rect").attr({x:0, y:0, width:w, height:h, stroke:"black", fill:"snow"});
+                        
+            var gBarRects = svg.append("g");
+            gBarRects.selectAll("rect")
+                .data(dataset["2011-06"])
+                .enter()
+                .append("rect")
+                .attr({
+                    "x" : function(d){ return scaleX(d.browser); },
+                    "y" : function(d){ return h - margin.y - scaleY(d.share); },
+                    "width" : scaleX.rangeBand(),
+                    "height" : function(d){ return scaleY(d.share); },
+                    "fill" : function(d){ return "rgb(64, 64, " + Math.floor(d.share * 255 / maxY) + ")";}
+                });
+                
+            var gBarTexts = svg.append("g");
+            gBarTexts.selectAll("text")
+                .data(dataset["2011-06"])
+                .enter()
+                .append("text")
+                .text(function(d){ return d.share; })
+                .attr({
+                    "x" : function(d){ return scaleX(d.browser) + scaleX.rangeBand() / 2; },
+                    "y" : function(d){ return h - margin.y - scaleY(d.share) + 14; },
+                    "fill" : "white",
+                    "text-anchor" : "middle"
+                });
+            
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(0," + (h - margin.y) + ")")
+                .call(axisX);
+
+            var txtTitle = svg.append("text");                                        
+            txtTitle
+                .attr({
+                    "font-size" : 15,
+                    "text-anchor" : "middle",
+                    "x" : w/2,
+                    "y" : 15})
+                .text("Browser Share 2011-06");
+            
+            d3.selectAll("button").on("click", function() {
+            
+                var term = this.id;
+                gBarTexts.selectAll("text")
+                    .data(dataset[term])
+                    .text(function(d){ return d.share; })
+                    .transition()
+                    .duration(100)
+                    .delay(function(d,i){ return i*100; })
+                    .attr({
+                        "y" : function(d){ return h - margin.y - scaleY(d.share) + 14; },
+                    });
+                    
+                gBarRects.selectAll("rect")
+                    .data(dataset[term])
+                    .transition()
+                    .duration(1000)
+                    .ease(document.getElementById("ease").value)
+                    .delay(function(d,i){ return i*100; })
+                    .attr({
+                        "y" : function(d){ return h - margin.y - scaleY(d.share); },
+                        "height" : function(d){ return scaleY(d.share); },
+                        "fill" : function(d){ return "rgb(64, 64, " + Math.floor(d.share * 255 / maxY) + ")";}
+                    });
+                
+                txtTitle
+                    .transition()
+                    .text("Browser Share " + term);
+            });
+        </script>
+    </body>
+</html>

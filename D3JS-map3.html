@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+
+    <title>D3 JP Map</title>
+    <style type="text/css">
+        .land {
+            fill : lime;
+            stroke : none;
+        }
+        .land-boundary {
+            fill: none;
+            stroke: white;
+            stroke-dasharray: 2,2;
+            stroke-linejoin: round;
+        }
+        .land-sea-boundary {
+            fill: none;
+            stroke: gray;
+            stroke-width : 0.3;
+        }
+        .river {
+            fill: none;
+            stroke: blue;
+            stroke-width : 0.3;
+        }
+        .lake {
+            fill: blue;
+            stroke: none;
+        }
+        .graticule {
+            fill: none;
+            stroke: #777;
+            stroke-width: .5px;
+            stroke-opacity: .5;
+        }
+    </style>
+    <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script type="text/javascript" src="http://d3js.org/topojson.v1.min.js" charset="utf-8"></script>
+</head>
+
+<body>
+    <div id="unitName" class="hidden"></div><script type="text/javascript">
+        var width = 640;
+        var height = 320;
+
+        var svg = d3.select("body").append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+        svg.append("rect").attr({x:0, y:0, width:width, height:height, stroke:"black", fill:"lavender"});
+        var projection = d3.geo.equirectangular()
+                .scale(110)
+                .center([0, 0])
+                .translate([width / 2, height / 2]);
+
+        var path = d3.geo.path()
+                .projection(projection);
+                
+        var graticule = d3.geo.graticule();
+
+        var url = "index.php?plugin=attach&pcmd=open&file=world.json&refer=HTML%20D3.js%20Globe";
+        //var url = "http://localhost:8008/world.json";
+
+        d3.json(url, function(error, data){
+
+            var land = topojson.feature(data, data.objects.land);
+            var river = topojson.feature(data, data.objects.river);
+            var lake = topojson.feature(data, data.objects.lake);
+
+            // 経線、緯線
+            svg.append("path")
+                .datum(graticule)
+                .attr("class", "graticule")
+                .attr("d", path);
+
+            // 国
+            svg.selectAll(".lands")
+                .data(land.features)
+                .enter()
+                .append("path")
+                .attr("class", "land")
+                .attr("d", path);
+
+            // 国境 (他のポリゴンと共有)
+            svg.append("path")
+                .datum(topojson.mesh(data, data.objects.land, function(a, b) { return a !== b; }))
+                .attr("d", path)
+                .attr("class", "land-boundary");
+
+            // 海岸 (他のポリゴンと共有しない)
+            svg.append("path")
+                .datum(topojson.mesh(data, data.objects.land, function(a, b) { return a === b; }))
+                .attr("d", path)
+                .attr("class", "land-sea-boundary");
+
+
+            // 河川
+            svg.selectAll(".river")
+                .data(river.features)
+                .enter()
+                .append("path")
+                .attr("class", "river")
+                .attr("d", path);
+
+
+            // 湖沼
+            svg.selectAll(".lake")
+                .data(lake.features)
+                .enter()
+                .append("path")
+                .attr("class", "lake")
+                .attr("d", path);
+
+        }); // end of d3.json
+    </script>
+</body>
+</html>

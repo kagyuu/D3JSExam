@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Axis</title>
+        <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <style type="text/css">
+            .axisX path,
+            .axisX line {
+                fill: none;
+                stroke: gray;
+                shape-rendering: crispEdges;
+            }
+            .axisX text {
+                font-family: sans-serif;
+                fill: gray;
+                font-size: 9px;
+            }
+            
+            .axisY path,
+            .axisY line {
+                fill: none;
+                stroke: gray;
+                shape-rendering: crispEdges;
+            }
+            .axisY text {
+                font-family: sans-serif;
+                fill: gray;
+                font-size: 9px;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="chart"></div>
+        <button value="rotate">Rotate</button>
+        <button value="reverse">Reverse</button>
+        <button value="out">Zoom Out</button>
+        <button value="in">Zoom In</button>
+        <script type="text/javascript">
+            function fx(t) {
+                return fr(t) * Math.cos(t);
+            }
+            function fy(t) {
+                return fr(t) * Math.sin(t);
+            }
+            function fr(t) {
+                return Math.exp(0.01*t);
+            }
+            function rad2rgb(rad) {
+                var r,g,b;
+                var deg = (rad * 180 / Math.PI) % 360;
+
+                if (deg < 60) {
+                    r = 255;
+                    g = 255 * deg / 60;
+                    b = 0;
+                } else if (deg < 120) {
+                    r = 255 - ( 255 * (deg - 60) / 60 );
+                    g = 255;
+                    b = 0;
+                } else if (deg < 180) {
+                    r = 0;
+                    g = 255;
+                    b = 255 * (deg -120) / 60;
+                } else if (deg < 240) {
+                    r = 0;
+                    g = 255 - ( 255 * (deg - 180) / 60 );
+                    b = 255;
+                } else if (deg < 300) {
+                    r = 255 * (deg -240) / 60;
+                    g = 0;
+                    b = 255;
+                } else {
+                    r = 255;
+                    g = 0;
+                    b = 255 - ( 255 * (deg - 300) / 60 );
+                }
+                return "rgba(" + Math.floor(r) + "," + Math.floor(g) + "," + Math.floor(b) + ",0.8)";
+            }
+
+            var w = 400;
+            var h = 400;
+            var margin = {x:40, y:40};
+
+            var t = 0.0;
+            var dataset = new Array();
+            for (var p = 0; p < 255; p++) {
+                dataset.push([fx(t), fy(t), t]);
+                t += Math.PI * 0.13;
+            }
+
+            var minX = d3.min(dataset, function(d) {return d[0];});
+            var maxX = d3.max(dataset, function(d) {return d[0];});
+
+            var minY = d3.min(dataset, function(d) {return d[1];});
+            var maxY = d3.max(dataset, function(d) {return d[1];});
+
+            var scaleX = d3.scale.linear()
+                .domain([minX, maxX])
+                .rangeRound([margin.x, w - margin.x])
+                .nice();
+
+            var axisX = d3.svg.axis()
+                .scale(scaleX)
+                .orient("bottom");
+
+            var scaleY = d3.scale.linear()
+                .domain([minY, maxY])
+                .rangeRound([h - margin.y, margin.y])
+                .nice();
+
+            var axisY = d3.svg.axis()
+                .scale(scaleY)
+                .orient("left");
+
+            var svg = d3.select("#chart").append("svg").attr({width: w, height: h});
+
+            svg.selectAll("circle")
+                .data(dataset)
+                .enter()
+                .append("circle")
+                .attr("cx", function(d){
+                    return scaleX(d[0]);
+                })
+                .attr("cy", function(d){
+                    return scaleY(d[1]);
+                })
+                .attr("fill", function(d){return rad2rgb(d[2]); })
+                .attr("r", function(d){return scaleX(fr(d[2])) - scaleX(fr(d[2]-2*Math.PI)); });
+
+            svg.append("g")
+                .attr("class", "axisX")
+                .attr("transform", "translate(0," + scaleY(0) + ")")
+                .call(axisX);
+
+            svg.append("g")
+                .attr("class", "axisY")
+                .attr("transform", "translate(" + scaleX(0) + ",0)")
+                .call(axisY);
+
+            var rotate = 0;
+            d3.selectAll("button").on("click", function() {
+                var btn = this.value;
+
+                switch(btn) {
+                case 'rotate' :
+                    rotate = (rotate + 1) % 4;
+
+                    svg.selectAll("circle")
+                        .data(dataset)
+                        .transition()
+                        .ease("bounce")
+                        .duration(2000)
+                        .attr("cx", function(d){
+                            return scaleX((rotate == 0 || rotate == 1) ? d[0] : -1 * d[0]);
+                        })
+                        .attr("cy", function(d){
+                            return scaleY((rotate == 0 || rotate == 3) ? d[1] : -1 * d[1]);
+                        });
+
+                    break;
+                case 'reverse' :
+                    rotate = (rotate + 2) % 4;
+                    
+                    svg.selectAll("circle")
+                        .data(dataset)
+                        .transition()
+                        .delay(function(d,i){ return i; })
+                        .ease("bounce")
+                        .duration(2000)
+                        .attr("cx", function(d){
+                            return scaleX((rotate == 0 || rotate == 1) ? d[0] : -1 * d[0]);
+                        })
+                        .attr("cy", function(d){
+                            return scaleY((rotate == 0 || rotate == 3) ? d[1] : -1 * d[1]);
+                        });
+                        
+                    break;
+                    
+                case 'in' :
+                    t -= Math.PI * 0.13 * 255 * 2;
+                case 'out' :
+                    for (var p = 0; p < 255; p++) {
+                        dataset[p] = [fx(t), fy(t), t];
+                        t += Math.PI * 0.13;
+                    }
+
+                    
+                    svg.selectAll("circle")
+                        .data(dataset)
+                        .transition()
+                        .attr("cx", function(d){
+                            return scaleX((rotate == 0 || rotate == 1) ? d[0] : -1 * d[0]);
+                        })
+                        .attr("cy", function(d){
+                            return scaleY((rotate == 0 || rotate == 3) ? d[1] : -1 * d[1]);
+                        });
+                    
+		            minX = d3.min(dataset, function(d) {return d[0];});
+		            maxX = d3.max(dataset, function(d) {return d[0];});
+
+		            minY = d3.min(dataset, function(d) {return d[1];});
+		            maxY = d3.max(dataset, function(d) {return d[1];});                    
+                    
+                    scaleX.domain([minX,maxX]);
+                    scaleY.domain([minY,maxY]);
+                    
+                    svg.selectAll("circle")
+                        .data(dataset)
+                        .transition()
+                        .delay(function(d,i){ return 500+i; })
+                        .ease("bounce")
+                        .duration(1000)
+                        .attr("cx", function(d){
+                            return scaleX((rotate == 0 || rotate == 1) ? d[0] : -1 * d[0]);
+                        })
+                        .attr("cy", function(d){
+                            return scaleY((rotate == 0 || rotate == 3) ? d[1] : -1 * d[1]);
+                        });
+
+                    svg.select(".axisX")
+				    	.transition()
+				    	.delay(500)
+				    	.duration(1000)
+						.call(axisX);
+						
+                    svg.select(".axisY")
+				    	.transition()
+				    	.delay(500)
+				    	.duration(1000)
+						.call(axisY);
+						
+                    break;
+                }
+
+            });
+
+        </script>
+    </body>
+</html>

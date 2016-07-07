@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+
+    <title>D3 Globe</title>
+    <style type="text/css">
+        .land {
+            fill : lime;
+            stroke : none;
+        }
+        .land-boundary {
+            fill: none;
+            stroke: gray;
+            stroke-dasharray: 2,2;
+            stroke-linejoin: round;
+        }
+        .land-sea-boundary {
+            fill: none;
+            stroke: gray;
+            stroke-width : 0.3;
+        }
+        .river {
+            fill: none;
+            stroke: blue;
+            stroke-width : 0.3;
+        }
+        .lake {
+            fill: blue;
+            stroke: none;
+        }
+        .graticule {
+            fill: none;
+            stroke: white;
+            stroke-width: .5;
+            stroke-opacity: .5;
+        }
+        .equator {
+            fill: none;
+            stroke: red;
+            stroke-width : 1;
+        }
+    </style>
+    <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script type="text/javascript" src="http://d3js.org/topojson.v1.min.js" charset="utf-8"></script>
+</head>
+
+<body bgcolor="black">
+    <svg></svg>
+    <button>flat</button>
+    <script type="text/javascript">
+        var width = 480;
+        var height = 480;
+
+        var projection = d3.geo.orthographic()
+                .scale(200)
+                .center([0, 0])
+                .translate([width / 2, height / 2])
+                .clipAngle(90);
+
+        var path = d3.geo.path()
+                .projection(projection);
+                
+        var graticule = d3.geo.graticule();
+        
+        var svg = d3.select("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+		// グラデーション定義
+		var defs = svg.append("defs");
+		
+		var grad1 = defs.append("linearGradient")
+		    .attr("id", "g1")
+		    .attr("x1", "0")
+		    .attr("y1", "0")
+		    .attr("x2", "1")
+		    .attr("y2", "1");
+		
+        grad1.append("stop")
+		     .attr("offset", "0.0")
+		     .attr("stop-color", "blue");
+		
+		grad1.append("stop")
+		     .attr("offset", "1.0")
+		     .attr("stop-color", "darkblue");
+		
+		// 球 (の見た目の円) をグラデーションで塗りつぶす
+		svg.append("path")
+		    .datum({type: "Sphere"})
+		    .attr("id", "sphere")
+		    .attr("d", path)
+		    .attr("fill", "url(#g1)");
+
+        var url = "index.php?plugin=attach&pcmd=open&file=world.json&refer=HTML%20D3.js%20Globe";
+        //var url = "http://localhost:8008/world.json";
+
+        d3.json(url, function(error, data){
+
+            var land = topojson.feature(data, data.objects.land);
+            var river = topojson.feature(data, data.objects.river);
+            var lake = topojson.feature(data, data.objects.lake);
+
+            // 経線、緯線
+            svg.append("path")
+                .datum(graticule)
+                .attr("class", "graticule")
+                .attr("d", path);
+
+            // 国
+            svg.selectAll(".lands")
+                .data(land.features)
+                .enter()
+                .append("path")
+                .attr("class", "land")
+                .attr("d", path);
+
+            // 国境 (他のポリゴンと共有)
+            svg.append("path")
+                .datum(topojson.mesh(data, data.objects.land, function(a, b) { return a !== b; }))
+                .attr("d", path)
+                .attr("class", "land-boundary");
+
+            // 海岸 (他のポリゴンと共有しない)
+            svg.append("path")
+                .datum(topojson.mesh(data, data.objects.land, function(a, b) { return a === b; }))
+                .attr("d", path)
+                .attr("class", "land-sea-boundary");
+
+
+            // 河川
+            svg.selectAll(".river")
+                .data(river.features)
+                .enter()
+                .append("path")
+                .attr("class", "river")
+                .attr("d", path);
+
+
+            // 湖沼
+            svg.selectAll(".lake")
+                .data(lake.features)
+                .enter()
+                .append("path")
+                .attr("class", "lake")
+                .attr("d", path);
+            
+            // 赤道
+            svg.insert("path")
+                .datum(equatorGeoJson())
+                .attr("class", "equator")
+                .attr("d", path);
+
+        }); // end of d3.json
+        
+        var projection2 = d3.geo.equirectangular()
+	        .scale(200)
+	        .center([0,0])
+	        .translate([width / 2, height / 2]);
+        
+        var path2 = d3.geo.path().projection(projection2);   
+        
+        d3.select("button").on("click", function() {
+	    	
+	    	var $this = d3.select(this);
+	    	
+	    	switch ($this.text()) {
+	    	case "flat" :
+		        svg.selectAll("path")
+			        .transition()
+			        .ease("sin")
+			        .duration(1000)
+			        .attr("d", path2);
+	    		$this.text("globe");
+	    	    break;
+	    	    
+	    	case "globe" :
+	    	default :
+		        svg.selectAll("path")
+			        .transition()
+			        .ease("sin")
+			        .duration(500)
+			        .attr("d", path);
+	    		$this.text("flat");
+	    	    break;
+	    	}  
+        })
+                
+        function equatorGeoJson() {
+		
+		    var path = new Array();
+		
+		    for (var lon = -180; lon <= 180; lon += 5) {
+		        path.push([lon, 0]);
+		    }
+		
+		    return {
+		        "type": "Feature",
+		        "geometry": {
+		        "type": "LineString",
+		        "coordinates": path
+		    }
+		  };
+		}
+    </script>
+</body>
+</html>

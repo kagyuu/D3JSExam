@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Scale</title>
+        <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    </head>
+    <body>
+        <script type="text/javascript">
+                        
+            // N225
+            var dataset = [
+                {"date":1372078863613,"value":13062},
+                {"date":1372165263613,"value":12969},
+                {"date":1372251663613,"value":12834},
+                {"date":1372338063613,"value":13213},
+                {"date":1372424463613,"value":13677},
+                {"date":1372683663613,"value":13852}
+            ];
+            
+            // min value
+            var min = d3.min(dataset, function(d) {
+                return d.value;
+            });
+            
+            // max value
+            var max = d3.max(dataset, function(d) {
+                return d.value;
+            });
+            
+            // margin
+            var margin = 1000;
+            
+            var w = 400;
+            var h = 100;
+            
+             // Input Data is (12834-1000)yen to (13852+1000)yen
+             // Output is 20px to 400px
+            var scale = d3.scale.linear()
+                .domain([min - margin, max + margin])
+                .range([20, h]);
+            
+            var svg = d3.select("body").append("svg").attr({width:w, height:h});
+            
+            svg.selectAll("rect")
+                .data(dataset)
+                .enter()
+                .append("rect")
+                .attr({
+                    "x" : function(d, i){
+                        return (i * 60);
+                    },
+                    "y" : function(d, i){
+                        return h - scale(d.value);
+                    },
+                    "height" : function(d, i){
+                        return scale(d.value);
+                    },
+                    "width" : 55,
+                    "fill" : "blue"
+                });
+                
+           svg.selectAll("text")
+                .data(dataset)
+                .enter()
+                .append("text")
+                .attr({
+                    "x" : function(d, i){
+                        return (i * 60);
+                    },
+                    "y" : function(d, i){
+                        return h - scale(d.value) - 5;
+                    }})
+                .text(function(d, i){
+                    return d.value;
+                });             
+        </script>
+    </body>
+</html>

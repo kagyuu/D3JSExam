@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>D3 Page Template</title>
+        <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <script type="text/javascript" src="http://code.jquery.com/jquery-2.0.2.js" charset="utf-8"></script>
+    </head>
+    <body>
+        <ul id="list1">
+            <li>L1</li>
+            <li>L2</li>
+        </ul>
+        
+        <ul id="list2">
+            <li>A</li>
+            <li>B</li>
+            <li>C</li>
+            <li>D</li>
+            <li>E</li>
+            <li>F</li>
+            <li>G</li>
+            <li>H</li>
+        </ul>
+        
+        <button>D3.jsはじめの一歩</button>
+        
+        <script type="text/javascript">
+            var dataset = [5, 10, 15, 20, 25];
+            
+            $('button')
+                .attr('disabled', false)
+                .on('click', function() {
+                    applyData('#list1', dataset);
+                    applyData('#list2', dataset);
+                    $(this).attr('disabled', true);
+                });
+            
+            function applyData(selector) {
+                var update = d3.select(selector).selectAll("li").data(dataset);
+                var enter  = update.enter(); 
+                var exit   = update.exit();
+                
+                // 既存の <li>
+                update
+                    .text( function(d,i) {
+                        return $(this).html() + "→" + d;
+                    } )
+                    .style("color", "gray")
+                    .attr("type", "1");
+                
+                // 追加された <li>
+                enter
+                    .append("li")
+                    .text( function(d) { return d; } )
+                    .style("color", "red");
+                
+                // 余った <li>
+                exit.remove();
+            }
+        </script>
+    </body>
+</html>
